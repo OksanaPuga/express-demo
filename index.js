@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+const Joi = require('joi');
 const port = process.env.port || 3000;
 
 const COURSES = [
@@ -31,6 +32,17 @@ app.get('/api/courses/:id', (req, res) => {
 });
 
 app.post('/api/courses', (req, res) => {
+    const scema = {
+        name: Joi.string().min(3).required()
+    };
+    const validation = Joi.validate(req.body, scema);
+
+    if (validation.error) {
+        const error = validation.error.details[0].message;
+        res.status(400).send(error);
+        return;
+    }
+    
     const course = {
         id: COURSES.length + 1,
         name: req.body.name
