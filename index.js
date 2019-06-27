@@ -21,9 +21,7 @@ app.get('/api/courses', (req, res) => {
 });
 
 app.get('/api/courses/:id', (req, res) => {
-    const course = COURSES.find(
-        course => course.id === parseInt(req.params.id)
-    );
+    const course = findCourse(req.params.id);
     if (course) {
         res.send(course);
     } else {
@@ -32,14 +30,10 @@ app.get('/api/courses/:id', (req, res) => {
 });
 
 app.post('/api/courses', (req, res) => {
-    const scema = {
-        name: Joi.string().min(3).required()
-    };
-    const validation = Joi.validate(req.body, scema);
+    const validation = validateCourse(req.body);
 
     if (validation.error) {
-        const error = validation.error.details[0].message;
-        res.status(400).send(error);
+        sendValidationError(validation.error, res);
         return;
     }
     
@@ -49,6 +43,42 @@ app.post('/api/courses', (req, res) => {
     };
     COURSES.push(course);
     res.send(course);
-})
+});
+
+app.put('/api/courses/:id', (req, res) => {
+    const course = findCourse(req.params.id);
+
+    if (!course) {
+        res.status(404).send('The course with this ID was not found');
+        return;
+    }
+
+    const validation = validateCourse(req.body);
+
+    if (validation.error) {
+        sendValidationError(validation.error, res);
+        return;
+    }
+
+    Object.keys(req.body).forEach(key => course[key] = req.body[key]);
+    res.send(course);
+});
+
+
+const findCourse = id => COURSES.find(
+    course => course.id === parseInt(id)
+);
+
+const validateCourse = course => {
+    const scema = {
+        name: Joi.string().min(3).required()
+    };
+    return Joi.validate(course, scema);
+}
+
+const sendValidationError = (error, res) => {
+    const errorMsg = error.details[0].message;
+    res.status(400).send(errorMsg);
+}
 
 app.listen(port, () => console.log(`listening on port ${port}...`))
