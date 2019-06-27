@@ -3,7 +3,8 @@ const app = express();
 const Joi = require('joi');
 const port = process.env.port || 3000;
 
-const COURSES = [
+const courseNotFoundMsg = 'The course with this ID was not found';
+let COURSES = [
     { id: 1, name: 'Course 1' },
     { id: 2, name: 'Course 2' },
     { id: 3, name: 'Course 3' }
@@ -22,21 +23,17 @@ app.get('/api/courses', (req, res) => {
 
 app.get('/api/courses/:id', (req, res) => {
     const course = findCourse(req.params.id);
-    if (course) {
-        res.send(course);
-    } else {
-        res.status(404).send('The course with this ID was not found');
-    }
+
+    if (!course) return res.status(404).send(courseNotFoundMsg);
+
+    res.send(course);
 });
 
 app.post('/api/courses', (req, res) => {
     const validation = validateCourse(req.body);
 
-    if (validation.error) {
-        sendValidationError(validation.error, res);
-        return;
-    }
-    
+    if (validation.error) return sendValidationError(validation.error, res);
+
     const course = {
         id: COURSES.length + 1,
         name: req.body.name
@@ -47,20 +44,23 @@ app.post('/api/courses', (req, res) => {
 
 app.put('/api/courses/:id', (req, res) => {
     const course = findCourse(req.params.id);
-
-    if (!course) {
-        res.status(404).send('The course with this ID was not found');
-        return;
-    }
-
     const validation = validateCourse(req.body);
 
-    if (validation.error) {
-        sendValidationError(validation.error, res);
-        return;
-    }
+    if (!course) return res.status(404).send(courseNotFoundMsg);
+    if (validation.error) return sendValidationError(validation.error, res);
 
     Object.keys(req.body).forEach(key => course[key] = req.body[key]);
+    res.send(course);
+});
+
+app.delete('/api/courses/:id', (req, res) => {
+    const course = findCourse(req.params.id);
+
+    if (!course) return res.status(404).send(courseNotFoundMsg);
+
+    const idx = COURSES.indexOf(course);
+    COURSES.splice(idx, 1);
+
     res.send(course);
 });
 
